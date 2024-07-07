@@ -11,34 +11,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Install Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
       - name: Install node dependencies
         run: npm ci
       - name: Run tests for unit tests
         run: npm test
-
-  deploy:
+  build: 
     needs: unit-test-stage
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20
-      - name: Install dependencies
+      - name: get-code
+        uses: actions/checkout@v4
+      - name: install dependencies
         run: npm ci
-      - name: Build the project
-        run: npm run build 
+      - name: build-website
+        run: npm run build
       - name: Upload to artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: distfiles
-          path: |
-            dist
-            package.json
-      - name: Deploy
-        run: echo "deploying"
+          name: dist-files
+          path: dist
+          # path: |
+          #   dist
+          #   package.json
+
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: download-artifact
+        uses: actions/download-artifact@v4
+        with:
+           name: dist-files
+      - name: output contects
+        run: ls
