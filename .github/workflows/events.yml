@@ -1,22 +1,9 @@
-name: events-demo-4
+name: artifacts-demo
+
 on:
-  pull_request: 
-    types: 
-      - opened
-      #- edited 
-      #- closed
-  workflow_dispatch: #this is manual trigger  
   push: 
     branches: 
-      - main
-      - 'dev-*' #dev-new dev-this-is-new
-      - 'feat/**' #feat/new feat/new/button
-      # double stars will allow any chars after /
-
-  # to test this, create a branch: git checkout -b dev
-  # change code
-  # the above means this will trigger when PR created on these branches or on push happened on these branches
-
+      - artifacts
 jobs:
   unit-test-stage:
     runs-on: ubuntu-latest
