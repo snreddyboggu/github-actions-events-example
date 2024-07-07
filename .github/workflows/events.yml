@@ -1,4 +1,4 @@
-name: events-demo-1
+name: events-demo-2
 on:
   pull_request: 
     types: 
@@ -16,9 +16,9 @@ on:
   #to test this create a branch git checkout -b dev
   # change code
   # the above means this will trigger when pr created on this branches or on push happended on this branches
-  
+
 jobs:
-  unit-test-job:
+  unit-test-stage:
     runs-on: ubuntu-latest
     steps:
       - name: checkout-code
