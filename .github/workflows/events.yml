@@ -1,0 +1,49 @@
+name: events
+on: [push,workflow_dispatch]
+# this is event is triggred both when commit ro manual trigger 
+jobs:
+  unit-test-job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: get-code
+        uses: actions/checkout@v4
+      - name: install nodejs
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: install node dependencies
+        run: npm ci
+      - name: run test for unit tests
+        run: npm test
+  deploy:
+     needs: unit-test-job
+     runs-on: ubuntu-latest
+     steps:
+       - name: get-code
+         uses: actions/checkout@v4
+       - name: install nodejs
+         uses: actions/setup-node@v4
+         with:
+           node-version: 20
+
+       - name:  install dependencies
+         run: npm ci
+
+       - name:  build the project
+         run: npm run build 
+       - name: upload to artifacts
+         uses: actions/upload-artifact@v4
+         with:
+           name: distfiles
+           path: |
+             dist
+             package.json
+       - name:  deploy
+         run: echo "deploying"
+
+
+
+          
+      
+      
+          
