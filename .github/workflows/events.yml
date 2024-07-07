@@ -5,6 +5,10 @@ on:
       - opened
       #- edited 
   workflow_dispatch: #this is manual trigger  
+
+  #to test this create a branch git checkout -b dev
+  # change code
+  #
 jobs:
   unit-test-job:
     runs-on: ubuntu-latest
