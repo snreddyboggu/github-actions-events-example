@@ -1,4 +1,4 @@
-name: events-demo-2
+name: events-demo-4
 on:
   pull_request: 
     types: 
@@ -11,55 +11,47 @@ on:
       - main
       - 'dev-*' #dev-new dev-this-is-new
       - 'feat/**' #feat/new feat/new/button
-      # double starts will alow any chars afeter /
+      # double stars will allow any chars after /
 
-  #to test this create a branch git checkout -b dev
+  # to test this, create a branch: git checkout -b dev
   # change code
-  # the above means this will trigger when pr created on this branches or on push happended on this branches
+  # the above means this will trigger when PR created on these branches or on push happened on these branches
 
 jobs:
   unit-test-stage:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout-code
-        uses: actions/checkout@v4
-      - name: install nodejs
-        uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
         with:
           node-version: 20
-      - name: install node dependencies
+      - name: Install node dependencies
         run: npm ci
-      - name: run test for unit tests
+      - name: Run tests for unit tests
         run: npm test
+
   deploy:
-     needs: unit-test-job
-     runs-on: ubuntu-latest
-     steps:
-       - name: get-code
-         uses: actions/checkout@v4
-       - name: install nodejs
-         uses: actions/setup-node@v4
-         with:
-           node-version: 20
-
-       - name:  install dependencies
-         run: npm ci
-
-       - name:  build the project
-         run: npm run build 
-       - name: upload to artifacts
-         uses: actions/upload-artifact@v4
-         with:
-           name: distfiles
-           path: |
-             dist
-             package.json
-       - name:  deploy
-         run: echo "deploying"
-
-
-
-          
-      
-      
-          
+    needs: unit-test-stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Build the project
+        run: npm run build 
+      - name: Upload to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: distfiles
+          path: |
+            dist
+            package.json
+      - name: Deploy
+        run: echo "deploying"
