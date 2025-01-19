@@ -1,4 +1,4 @@
-name: AWS OIDC Connect Demo..
+name: AWS OIDC Connect Demo
 
 on:
   push:
@@ -22,7 +22,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::851725282145:role/github-action-role-admin-access
+          role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu
           role-session-name: samplerolesession
           aws-region: ${{ env.AWS_REGION }}
 
