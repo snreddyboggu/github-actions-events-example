@@ -1,47 +1,28 @@
-name: CodeGuru Security Example
+#For the provider URL: Use https://token.actions.githubusercontent.com
+#For the "Audience": Use sts.amazonaws.com 
+name: AWS OIDC Connect Demo
 on:
-  push:
-    branches:
-      - 'main'
-
+  push
+env:
+  AWS_REGION : "us-west-2"   
 permissions:
-  id-token: write
-  # for writing security events.
-  security-events: write
-  # only required for workflows in private repositories
-  actions: read
-  contents: read
-
+      id-token: write   # This is required for requesting the JWT
+      contents: read    # This is required for actions/checkout
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  DemoOIDC:
+    runs-on: demo
     steps:
-      - name: Checkout Respository
+      - name: Git clone the repository
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
 
-      - name: Configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v3
         with:
-          role-to-assume: arn:aws:iam::191962495115:role/CodeGuruSecurityGitHubAccessRole
-          aws-region: us-east-1
-          role-session-name: GitHubActionScript
+          role-to-assume: arn:aws:iam::851725282145:role/github-action-role-admin-access
+          role-session-name: samplerolesession
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: CodeGuru Security
-        uses: aws-actions/codeguru-security@v1
-        with:
-          source_path: .
-          aws_region: us-east-1
-          fail_on_severity: Critical
-      - name: Print findings
-        run: |
-          ls -l
-          cat codeguru-security-results.sarif.json
+     
 
-      # If you want content in security scanning, you’ll need to enable codescanning by going into github.
-      # https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning-for-a-repository
-      - name: Upload result
-        uses: github/codeql-action/upload-sarif@v2
-        with:
-          sarif_file: codeguru-security-results.sarif.json
+      - name: Print assumed role
+        run: aws sts get-caller-identity
