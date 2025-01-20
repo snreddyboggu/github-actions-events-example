@@ -36,7 +36,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up EKS kubeconfig
-        run: aws eks update-kubeconfig --name dev --region ${{ env.AWS_REGION }}
+        run: aws eks update-kubeconfig --name test --region ${{ env.AWS_REGION }}
 
       - name: Debug kubeconfig
         run: |
