@@ -1,78 +1,44 @@
-name: CRX oidc demo
+name: Retrieve and Store Secrets in Kubernetes
 
 on:
   push:
     branches:
-      - "main"  # Trigger on push to staging branch
-  pull_request:
-    branches:
-      - "main"  # Trigger on pull requests to staging branch
+      - main
 
 env:
   AWS_REGION: "us-east-1"
 
 permissions:
-  id-token: write   # Required for requesting the JWT
+  id-token: write   # Required for AWS OIDC
   contents: read    # Required for actions/checkout
 
-
 jobs:
-  deploy:
+  manage-secrets:
     runs-on: ubuntu-latest
-    environment: staging  # Specify the environment
 
     steps:
-      - name: Git clone the repository
-        uses: actions/checkout@v3  # Checkout the code from the repository
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'v1.29.0'  # Specify the kubectl version
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      # Step 1: Configure AWS credentials
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu
-          role-session-name: samplerolesession
           aws-region: ${{ env.AWS_REGION }}
 
-      #- name: Set up EKS kubeconfig
-      #  run: aws eks update-kubeconfig --name CRX-DEV --region us-west-2  # Hardcoded region
+      # Step 2: Retrieve secrets from AWS Secrets Manager
+      - name: Retrieve secrets
+        id: fetch-secrets
+        uses: aws-actions/aws-secretsmanager-get-secrets@v2
+        with:
+          secret-ids: my-app-secrets
+          parse-json-secrets: false
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2  # Login to Amazon ECR
+      # Step 3: Debug - Output fetched secrets for testing (Remove after verification)
+      - name: Debug Secrets Retrieval
+        run: echo "${{ steps.fetch-secrets.outputs.my-app-secrets }}"
 
-      - name: Get commit hash
-        id: get-commit-hash
-        run: echo "COMMIT_HASH=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
-
-      - name: Get timestamp
-        id: get-timestamp
-        run: echo "TIMESTAMP=$(date +'%Y-%m-%d-%H-%M')" >> $GITHUB_ENV
-
-      - name: Build, tag, and push the image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: server  # ECR Repository for Backend
-          IMAGE_TAG: staging-${{ env.COMMIT_HASH }}-${{ env.TIMESTAMP }}  # Prefix with 'staging'
+      # Step 4: Create Kubernetes secret (securely)
+      - name: Create Kubernetes secret
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-      - name: Update Helm values.yaml with the latest image
-        run: |
-          IMAGE_TAG=staging-${{ env.COMMIT_HASH }}-${{ env.TIMESTAMP }}
-          FULL_IMAGE_NAME=${{ steps.login-ecr.outputs.registry }}/server  # Use the correct repo name
-          # Update only the repository and tag separately
-          sed -i "s|repository: .*|repository: ${FULL_IMAGE_NAME}|" crx-server/values.yaml
-          sed -i "s|tag: .*|tag: \"${IMAGE_TAG}\"|" crx-server/values.yaml
-      #- name: Ensure namespace exists
-       # run: kubectl create namespace crx-dev || true
-
-     # - name: Deploy to EKS using Helm
-      #  run: |
-        #  helm upgrade --install crx-server crx-server \
-         #   --values crx-server/values.yaml \
-         #   --namespace crx-dev  # Specify the namespace
+          echo "${{ steps.fetch-secrets.outputs.my-app-secrets }}" | kubectl create secret generic my-app-secrets \
+            --from-env-file=/dev/stdin \
+            --dry-run=client -o yaml | kubectl apply -f -
