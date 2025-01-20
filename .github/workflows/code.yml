@@ -1,4 +1,4 @@
-name: my-app-secrets
+name: my-app-secrets.
 
 on:
   push:
