@@ -3,47 +3,46 @@ name: CRX OIDC Demo
 on:
   push:
     branches:
-      - "main"  # Trigger on push to the main branch
+      - "main"
   pull_request:
     branches:
-      - "main"  # Trigger on pull requests to the main branch
+      - "main"
 
 env:
   AWS_REGION: "us-east-1"
 
 permissions:
-  id-token: write   # Required for requesting the JWT
-  contents: read    # Required for actions/checkout
+  id-token: write
+  contents: read
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    environment: staging  # Specify the environment
+    environment: staging
 
     steps:
-      # Step 1: Git clone the repository
       - name: Git clone the repository
-        uses: actions/checkout@v3  # Checkout the code from the repository
+        uses: actions/checkout@v3
 
-      # Step 2: Install kubectl
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
         with:
-          version: 'v1.29.0'  # Specify the kubectl version
+          version: 'v1.29.0'
 
-      # Step 3: Configure AWS Credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu
-          role-session-name: samplerolesession
           aws-region: ${{ env.AWS_REGION }}
-       
-      # Step 4: Set up EKS kubeconfig
+
       - name: Set up EKS kubeconfig
         run: aws eks update-kubeconfig --name dev --region ${{ env.AWS_REGION }}
 
-      # Step 5: Retrieve secrets from AWS Secrets Manager
+      - name: Debug kubeconfig
+        run: |
+          kubectl config view
+          kubectl get nodes
+
       - name: Retrieve secrets
         id: fetch-secrets
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
@@ -51,7 +50,6 @@ jobs:
           secret-ids: my-app-secrets
           parse-json-secrets: false
 
-      # Step 6: Create Kubernetes secret (securely)
       - name: Create Kubernetes secret
         run: |
           echo "${{ steps.fetch-secrets.outputs.my-app-secrets }}" | kubectl create secret generic my-app-secrets \
