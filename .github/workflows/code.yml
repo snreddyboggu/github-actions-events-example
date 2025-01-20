@@ -1,4 +1,4 @@
-name: CRX OIDC Demo.
+name: my-app-secrets
 
 on:
   push:
@@ -32,7 +32,7 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu
+          role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu  # Add your IAM role ARN here
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Set up EKS kubeconfig
@@ -47,11 +47,11 @@ jobs:
         id: fetch-secrets
         uses: aws-actions/aws-secretsmanager-get-secrets@v2
         with:
-          secret-ids: my-app-secrets
-          parse-json-secrets: false
+          secret-ids: "my-app-secrets"  # Update this to your secret's name
+          parse-json-secrets: false  # Set to true if the secret is in JSON format
 
       - name: Create Kubernetes secret
         run: |
-          echo "${{ steps.fetch-secrets.outputs.my-app-secrets }}" | kubectl create secret generic my-app-secrets \
+          echo "${{ steps.fetch-secrets.outputs['my-app-secrets'] }}" | kubectl create secret generic my-app-secrets \
             --from-env-file=/dev/stdin \
             --dry-run=client -o yaml | kubectl apply -f -
