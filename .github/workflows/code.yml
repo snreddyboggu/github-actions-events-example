@@ -1,4 +1,4 @@
-name: CRX OIDC Demo
+name: CRX OIDC Demo.
 
 on:
   push:
