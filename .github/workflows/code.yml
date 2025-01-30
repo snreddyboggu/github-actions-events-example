@@ -1,12 +1,12 @@
 name: CRX OIDC Demo
 
 on:
-  push:
-    branches:
-      - "main"
-  pull_request:
-    branches:
-      - "main"
+  workflow_dispatch:  # Allow manual triggering
+    inputs:
+      custom_image_name:
+        description: "Custom Docker image name (e.g., my-image:v1)"
+        required: true
+        default: "v1.0.0"  # Default value (optional)
 
 env:
   AWS_REGION: "us-east-1"
@@ -16,18 +16,12 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
-    environment: staging
 
     steps:
       - name: Git clone the repository
         uses: actions/checkout@v3
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-        with:
-          version: 'v1.29.0'
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -35,27 +29,19 @@ jobs:
           role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Set up EKS kubeconfig
-        run: aws eks update-kubeconfig --name test --region ${{ env.AWS_REGION }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2  # Login to Amazon ECR
 
-      - name: Debug kubeconfig
+      - name: Build, tag, and push the custom image to Amazon ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: server  # ECR Repository for Backend
+          IMAGE_TAG: ${{ inputs.custom_image_name }}  # Use custom image name
         run: |
-          kubectl config view
-          kubectl get nodes
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile2 .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-      - name: Retrieve secrets
-        id: fetch-secrets
-        uses: aws-actions/aws-secretsmanager-get-secrets@v2
-        with:
-          secret-ids: "my-app-secrets"  # Use the correct secret name from AWS Secrets Manager
-          parse-json-secrets: false  # Correct for plain text key-value format
-
-      - name: Debug Retrieved Secrets
-        run: |
-          echo "Retrieved secret: ${{ steps.fetch-secrets.outputs['my-app-secrets'] }}"
-
-      - name: Create Kubernetes secret
-        run: |
-          echo "${{ steps.fetch-secrets.outputs['my-app-secrets'] }}" | kubectl create secret generic my-app-secrets \
-            --from-env-file=/dev/stdin \
-            --dry-run=client -o yaml | kubectl apply -f -
+      - name: Print success message
+        run: echo "Successfully built and pushed $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG to ECR!"
