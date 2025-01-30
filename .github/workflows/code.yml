@@ -40,7 +40,7 @@ jobs:
           ECR_REPOSITORY: server  # ECR Repository for Backend
           IMAGE_TAG: ${{ inputs.custom_image_name }}  # Use custom image name
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f Dockerfile2 .
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Print success message
