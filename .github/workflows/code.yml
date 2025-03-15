@@ -1,47 +1,57 @@
-name: CRX OIDC Demo
-
+name: events-demo-4
 on:
-  workflow_dispatch:  # Allow manual triggering
-    inputs:
-      custom_image_name:
-        description: "Custom Docker image name (e.g., my-image:v1)"
-        required: true
-        default: "v1.0.0"  # Default value (optional)
+  pull_request: 
+    types: 
+      - opened
+      #- edited 
+      #- closed
+  workflow_dispatch: #this is manual trigger  
+  push: 
+    branches: 
+      - main
+      - 'dev-*' #dev-new dev-this-is-new
+      - 'feat/**' #feat/new feat/new/button
+      # double stars will allow any chars after /
 
-env:
-  AWS_REGION: "us-east-1"
-
-permissions:
-  id-token: write
-  contents: read
+  # to test this, create a branch: git checkout -b dev
+  # change code
+  # the above means this will trigger when PR created on these branches or on push happened on these branches
 
 jobs:
-  build-and-push:
+  unit-test-stage:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Git clone the repository
+      - name: Checkout code
         uses: actions/checkout@v3
-
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Install Node.js
+        uses: actions/setup-node@v3
         with:
-          role-to-assume: arn:aws:iam::851725282145:role/github-snreddyboggu
-          aws-region: ${{ env.AWS_REGION }}
+          node-version: 20
+      - name: Install node dependencies
+        run: npm ci
+      - name: Run tests for unit tests
+        run: npm test
 
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v2  # Login to Amazon ECR
-
-      - name: Build, tag, and push the custom image to Amazon ECR
-        id: build-image
-        env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: server  # ECR Repository for Backend
-          IMAGE_TAG: ${{ inputs.custom_image_name }}  # Use custom image name
-        run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-      - name: Print success message
-        run: echo "Successfully built and pushed $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG to ECR!"
+  deploy:
+    needs: unit-test-stage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm ci
+      - name: Build the project
+        run: npm run build 
+      - name: Upload to artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: distfiles
+          path: |
+            dist
+            package.json
+      - name: Deploy
+        run: echo "deploying"
