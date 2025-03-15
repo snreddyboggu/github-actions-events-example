@@ -1,12 +1,12 @@
 name: CRX OIDC Demo yy
 
 on:
-  workflow_dispatch:  # Allow manual triggering
-    inputs:
-      custom_image_name:
-        description: "Custom Docker image name (e.g., my-image:v1)"
-        required: true
-        default: "v1.0.0"  # Default value (optional)
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "main"
 
 env:
   AWS_REGION: "us-east-1"
